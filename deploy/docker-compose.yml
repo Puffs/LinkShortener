@@ -1,0 +1,22 @@
+services:
+
+  pg:
+    image: postgres:15
+    restart: always
+    env_file:
+      - ../app/.db.env
+    ports:
+      - "5432:5432"
+
+  server:
+    restart: always
+    build:
+      context: ../
+      dockerfile: ./deploy/Dockerfile
+    env_file:
+      - ../app/.db.env
+      - ../app/.env
+    volumes:
+      - ../app/:/app
+    ports:
+      - 8000:8000
