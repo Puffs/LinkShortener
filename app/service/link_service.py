@@ -6,14 +6,9 @@ from repository import LinkRepository
 from fastapi import Depends
 from db.database import get_async_session
 from models import Link
-import hashlib
-import base62
+from exceptions import ShortUrlNotFound
+from utils import convert_to_shorten_url
 
-
-def convert_to_shorten_url(long_url) -> str:
-    hash_obj = hashlib.md5(long_url.encode())
-    short_id = base62.encode(int(hash_obj.hexdigest(), 16))[:8]
-    return short_id
 
 class LinkServiceABC(ABC):
     """Интерфейс сервиса ссылки."""
@@ -29,13 +24,13 @@ class LinkServiceABC(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    async def get_redirect_url(self, id: int) -> str:
-        """Получение короткой ссылки по id."""
+    async def get_redirect_url(self, short_link: str) -> str:
+        """Получение короткой ссылки по короткой ссылке."""
         raise NotImplementedError
 
     @abstractmethod
     async def get_link_count(self, short_link: str) -> int:
-        """Получение счетчика ссылки по id."""
+        """Получение счетчика ссылки по короткой ссылке."""
         raise NotImplementedError
 
 
@@ -51,20 +46,32 @@ class LinkService(LinkServiceABC):
         link_dict = link_data.model_dump()
         link_dict["original_link"] = str(link_dict.get("original_link"))
         link_dict["short_link"] = convert_to_shorten_url(link_dict.get("original_link"))
-        new_link = await self.repository.add_link(link_dict)
-        return new_link.short_link
+
+        link_obj = await self.repository.get_link_by_short(link_dict["short_link"])
+
+        if link_obj is None:
+            link_obj = await self.repository.add_link(link_dict)
+        return link_obj.short_link
 
     async def get_redirect_url(self, short_link: str) -> str:
-        """Получение оригинальной ссылки по id."""
+        """Получение оригинальной ссылки по короткой ссылке."""
 
-        original_link = await self.repository.get_original_link(short_link)
-        return original_link
+        link_obj = await self.repository.get_link_by_short(short_link)
+        if link_obj is None:
+            raise ShortUrlNotFound()
+        
+        link_obj = await self.repository.increment_link_count(link_obj)
+        
+        return link_obj.link_count
     
     async def get_link_count(self, short_link: str) -> int:
         """Получение счетчика ссылки по короткой ссылке."""
 
-        link_count = await self.repository.get_link_count(short_link)
-        return link_count
+        link_obj = await self.repository.get_link_by_short(short_link)
+        if link_obj is None:
+            raise ShortUrlNotFound()
+        
+        return link_obj.link_count
 
 
 def get_link_service(
