@@ -43,7 +43,7 @@ class LinkService(LinkServiceABC):
         """Добавление ссылки."""
 
         link_dict = link_data.model_dump()
-        link_dict["original_link"] = str(link_dict.get("original_link"))
+        link_dict["original_link"] = str(link_dict["original_link"]).strip()
         link_dict["short_link"] = convert_to_shorten_url(link_dict.get("original_link"))
 
         link_obj = await self.repository.get_link_by_short(link_dict["short_link"])

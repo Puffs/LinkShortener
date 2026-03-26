@@ -1,1 +1,1 @@
-from .link import AddLinkSchema
+from .link import AddLinkSchema, ShortLinkOutputSchema, CountLinkOutputSchema
