@@ -1,2 +1,0 @@
-class ShortUrlNotFound(Exception):
-    pass

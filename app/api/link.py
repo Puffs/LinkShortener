@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, status
 from schemas import AddLinkSchema
 from fastapi.responses import RedirectResponse
 from service import LinkService, get_link_service
-from exceptions import ShortUrlNotFound
 from fastapi import HTTPException
 
 
@@ -32,11 +31,9 @@ async def redirect_to_original_link(
     short_id: str,
     link_service: Annotated[LinkService, Depends(get_link_service)]
 ):
-    try:
-        original_link = await link_service.get_redirect_url(short_id)
-    except ShortUrlNotFound:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ссылка не найдена")
     
+    original_link = await link_service.get_redirect_url(short_id)
+
     return RedirectResponse(url=original_link, status_code=status.HTTP_302_FOUND)
 
 
@@ -49,8 +46,7 @@ async def get_redirect_count(
     short_id: str,
     link_service: Annotated[LinkService, Depends(get_link_service)]
 ):
-    try:
-        link_count = await link_service.get_link_count(short_id)
-    except ShortUrlNotFound:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ссылка не найдена")
+
+    link_count = await link_service.get_link_count(short_id)
+
     return link_count

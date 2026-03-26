@@ -3,10 +3,9 @@ from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas import AddLinkSchema
 from repository import LinkRepository
-from fastapi import Depends
+from fastapi import Depends, status, HTTPException
 from db.database import get_async_session
 from models import Link
-from exceptions import ShortUrlNotFound
 from utils import convert_to_shorten_url
 
 
@@ -50,7 +49,8 @@ class LinkService(LinkServiceABC):
         link_obj = await self.repository.get_link_by_short(link_dict["short_link"])
 
         if link_obj is None:
-            link_obj = await self.repository.add_link(link_dict)
+            link_obj = await self.repository.create_link(link_dict)
+
         return link_obj.short_link
 
     async def get_redirect_url(self, short_link: str) -> str:
@@ -58,7 +58,7 @@ class LinkService(LinkServiceABC):
 
         link_obj = await self.repository.get_link_by_short(short_link)
         if link_obj is None:
-            raise ShortUrlNotFound()
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ссылка не найдена")
         
         link_obj = await self.repository.increment_link_count(link_obj)
         
@@ -68,8 +68,9 @@ class LinkService(LinkServiceABC):
         """Получение счетчика ссылки по короткой ссылке."""
 
         link_obj = await self.repository.get_link_by_short(short_link)
+
         if link_obj is None:
-            raise ShortUrlNotFound()
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ссылка не найдена")
         
         return link_obj.link_count
 

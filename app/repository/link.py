@@ -13,7 +13,7 @@ class LinkRepositoryABC(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def add_link(self, link_data: dict) -> Link:
+    async def create_link(self, link_data: dict) -> Link:
         """Создание ссылки."""
         raise NotImplementedError
 
@@ -33,7 +33,7 @@ class LinkRepository(LinkRepositoryABC):
     def __init__(self, session: AsyncSession):
         self.session: AsyncSession = session
 
-    async def add_link(self, link_data: dict) -> Link:
+    async def create_link(self, link_data: dict) -> Link:
         """Создание ссылки."""
 
         new_link = Link(**link_data)
